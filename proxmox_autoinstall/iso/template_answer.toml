@@ -1,0 +1,25 @@
+[global]
+keyboard = "jp"
+country = "jp"
+fqdn = "pveserver.example.local"
+mailto = "mail@example.com"
+timezone = "Asia/Tokyo"
+root-password-hashed = "XXXXXXXXXXXXXXXXXXXXXX"
+root-ssh-keys = [
+    "ssh-rsa XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX ansible@amsible-server"
+]
+
+[network]
+source = "from-answer"
+cidr = "192.168.1.1/24"
+dns = "192.168.1.254"
+gateway = "192.168.1.254"
+filter.ID_NET_NAME = "enp0"
+
+[disk-setup]
+filesystem = "ext4"
+disk-list = ["sda"]
+
+[first-boot]
+source = "from-iso"
+ordering = "before-network"
