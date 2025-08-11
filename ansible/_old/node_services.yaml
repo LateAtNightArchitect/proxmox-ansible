@@ -1,0 +1,21 @@
+---
+- hosts: all
+  become: no
+  gather_facts: yes
+  vars_files:
+  - ../variables/node_services.yaml
+  tasks: 
+  - name: disable_services
+    systemd:
+      name: "{{ item }}"
+      state: stopped
+      enabled: no
+    loop: "{{ disable_services }}"
+
+#  - name: enable_services
+#    systemd:
+#      name: "{{ item }}"
+#      state: started
+#      enabled: yes
+#    loop: "{{ enable_services }}"
+

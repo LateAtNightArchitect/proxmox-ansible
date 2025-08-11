@@ -1,0 +1,55 @@
+---
+# Linux kernel parameters
+- name: Set kernel parameter {{ item.param }}
+  ansible.posix.sysctl:
+    name: "{{ item.param }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  loop: "{{ kernel_parameters | default([]) }}"
+  when: kernel_parameters is defined and kernel_parameters | length > 0
+# Add apt repositories
+- name: Add apt repository {{ item }}
+  ansible.builtin.apt_repository:
+    repo: "{{ item }}"
+    state: present
+  loop: "{{ add_apt_packages_repositories }}"
+  when: add_apt_packages_repositories is defined and add_apt_packages_repositories | length > 0
+# Disable apt repositories
+- name: Disable apt repository {{ item }}
+  ansible.builtin.apt_repository:
+    repo: "{{ item }}"
+    state: absent
+  loop: "{{ del_apt_repositories }}"
+  when: del_apt_repositories is defined and del_apt_repositories | length > 0
+# Add apt packages
+- name: Install apt package {{ item }}
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ add_apt_packages }}"
+  when: add_apt_packages is defined and add_apt_packages | length > 0
+# Remove apt packages
+- name: Remove apt package {{ item }}
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: absent
+  loop: "{{ del_apt_packages }}"
+  when: del_apt_packages is defined and del_apt_packages | length > 0
+# Disable systemd services
+- name: disable_services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  loop: "{{ disable_services }}"
+  when: disable_services is defined and disable_services | length > 0
+# Enable systemd services
+- name: enable_services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop: "{{ enable_services }}"
+  when: enable_services is defined and enable_services | length > 0
+  

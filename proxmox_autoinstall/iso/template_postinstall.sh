@@ -12,6 +12,7 @@ VLAN_ID="100"
 # Presets
 IF_FILE="/etc/network/interfaces"
 BK_FILE="/etc/network/interfaces.org"
+AP_FILE="/etc/network/interfaces.append"
 TM_FILE="/etc/network/interfaces.edittmp"
 
 
@@ -66,9 +67,28 @@ GATEWAY=$(awk -v lnbr="$LINUX_BRIDGE" '
 
 echo "GATEWAY: ${GATEWAY}"
 
+# New vmbrVVVV block to appennd
+echo "ADD LINUX BRIDGE FOR VLAN ${VLAN_ID}:"
+
+cat <<EOF > "${AP_FILE}"
+auto vmbr${VLAN_ID}
+iface vmbr${VLAN_ID} inet manual
+        address ${ADDRESS}
+        gateway ${GATEWAY}
+        bridge-ports ${LINUX_BRIDGE}.${VLAN_ID}
+        bridge-stp off
+        bridge-fd 0
+EOF
+cat "${AP_FILE}"
+
 # Remove address and gateway from vmbrA block, add vlan-aware lines
 echo "VLAN-AWARE CONFIG: writing to ${TM_FILE}"
-awk -v lnbr="$LINUX_BRIDGE" '
+awk -v lnbr="${LINUX_BRIDGE}" '
+  BEGIN {
+    while (getline aline < "'"${AP_FILE}"'" > 0) {
+      append = append aline "\n"
+   }
+  }
   $0 ~ "auto "lnbr"$" {inblock=1; print; next}
   inblock && !NF {inblock=0}
   inblock && ($1=="address" || $1=="gateway") {next}
@@ -76,29 +96,19 @@ awk -v lnbr="$LINUX_BRIDGE" '
     print
     print "        bridge-vlan-aware yes"
     print "        bridge-vids 2-4094"
+    print ""
+    print append
     next
   }
   {print}
 ' "${IF_FILE}" > "${TM_FILE}"
 
-# Append new vmbrVVVV block
-echo "ADD LINUX BRIDGE FOR VLAN ${VLAN_ID}: writing to ${TM_FILE}"
-cat <<EOF >> "${TM_FILE}"
-
-auto vmbr${VLAN_ID}
-iface vmbr${VLAN_ID} inet manual
-        address ${ADDRESS}
-        gateway ${GATEWAY}
-        bridge-ports ${LINUX_BRIDGE}.${VLAN_ID}
-        bridge-stp off
-        bridge-fd 0ls
-
-EOF
 
 cat "${TM_FILE}"
 
 # Replace the original file
 cp -f "${TM_FILE}" "${IF_FILE}"
 rm -f "${TM_FILE}"
+rm -f "${AP_FILE}"
 
 echo "DONE: Network interfaces updated for VLAN-aware bridge and new VLAN bridge."

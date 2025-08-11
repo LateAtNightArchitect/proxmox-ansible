@@ -1,0 +1,31 @@
+---
+- name: Proxmox VE Node Setup
+  hosts: all
+  sudo: no
+  become: no
+  tasks:
+    # Disable IPv6 GRUB settings
+    - name: Comment out existing GRUB_CMDLINE_LINUX lines in /etc/default/grub
+      replace:
+        path: /etc/default/grub
+        regexp: '^(GRUB_CMDLINE_LINUX.*)'
+        replace: '# \1'
+      when: not ipv6_disabled
+
+    - name: Get existing GRUB_CMDLINE_LINUX_DEFAULT line (even if commented)
+      shell: "grep -E '^#?\\s*GRUB_CMDLINE_LINUX_DEFAULT=' /etc/default/grub | tail -1 | cut -d= -f2- | tr -d '\"'"
+      register: grub_cmdline_default
+      changed_when: false
+      when: not ipv6_disabled
+
+    - name: Set new GRUB_CMDLINE_LINUX_DEFAULT line with ipv6.disable=1
+      lineinfile:
+        path: /etc/default/grub
+        regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
+        line: 'GRUB_CMDLINE_LINUX_DEFAULT="{{ grub_cmdline_default.stdout | default("") | trim }} ipv6.disable=1"'
+        create: yes
+      when: not ipv6_disabled
+
+    - name: Update GRUB configuration
+      command: update-grub
+      when: not ipv6_disabled

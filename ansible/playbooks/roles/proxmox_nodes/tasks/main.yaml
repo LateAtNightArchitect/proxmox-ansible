@@ -1,0 +1,45 @@
+---
+# Common settings for proxmox nodes
+# Fix network intarface names for MAC addresses listed in inventory
+- name: Check each network interface from inventory
+  vars:
+    interfaces: "{{ nwinterfaces | from_yaml }}"
+  loop: "{{ interfaces }}"
+  loop_control:
+    loop_var: iface
+  set_fact:
+    matched_mac: "{{ hostvars[inventory_hostname]['ansible_' + iface.nwdevicename]['macaddress'] | default('') }}"
+- name: Log result for each interface
+  vars:
+    interfaces: "{{ nwinterfaces | from_yaml }}"
+  loop: "{{ interfaces }}"
+  loop_control:
+    loop_var: iface
+  debug:
+    msg: >-
+      {% set mac = hostvars[inventory_hostname]['ansible_' + iface.nwdevicename]['macaddress'] | default('') %}
+      {% if mac == iface.macaddress %}
+        Device {{ iface.nwdevicename }} has matching MAC {{ iface.macaddress }} 
+      {% else %}
+        Device with MAC {{ iface.macaddress }} not found or name mismatch (expected {{ iface.nwdevicename }})
+      {% endif %}
+- name: Create or replace /etc/systemd/network/<index>-<nwdevicename>.link file
+  loop: "{{ nwinterfaces | from_yaml }}"
+  loop_control:
+    loop_var: iface
+    index_var: index
+  ansible.builtin.copy:
+    dest: "/etc/systemd/network/{{ '%02d' | format(index) }}-{{ iface.nwdevicename }}.link"
+    owner: root
+    group: root
+    mode: '0444'
+    content: |
+      [Match]
+      MACAddress={{ iface.macaddress }}
+      Type=ether
+
+      [Link]
+      Name={{ iface.nwdevicename }}
+
+      [ipv6]
+      method=ignore

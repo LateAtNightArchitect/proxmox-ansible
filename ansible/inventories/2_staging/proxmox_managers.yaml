@@ -1,0 +1,8 @@
+all:
+  hosts: {}
+  children:
+    managers:
+      hosts:
+        proxadm1.promox.local:
+    build_tmp:
+      hosts:
